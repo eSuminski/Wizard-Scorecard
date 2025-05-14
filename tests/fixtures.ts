@@ -82,4 +82,4 @@ export const playData6 = [
   [3, 3, 4, 0, 0, 0, 3, 3, 4, 0, 0, 0], // round 10
 ];
 
-export const wizardPath = 'file:///' + path.resolve(__dirname, '../Wizard.html').replace(/\\/g, '/');
+export const wizardPath = 'file:///' + path.resolve(__dirname, '../src/Wizard.html').replace(/\\/g, '/');
