@@ -1,0 +1,17 @@
+{
+  "name": "wizard",
+  "version": "1.0.0",
+  "description": "A simple web-based application for tracking scores in the card game Wizard.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.18",
+    "typescript": "^5.8.3"
+  }
+}

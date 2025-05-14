@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard Card Game Scoring</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary-red: #d32f2f;
+      --primary-blue: #1976d2;
+      --primary-black: #111;
+    }
+
+    header, .btn-primary {
+      background: var(--primary-red);
+      color: #fff;
+    }
+
+    .btn-primary {
+      border: none;
+      padding: 0.5em 1.5em;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--primary-red), var(--primary-blue));
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(90deg, var(--primary-blue), var(--primary-red));
+    }
+
+    /* Back button styling */
+    .btn-secondary {
+      background: var(--primary-blue);
+      color: #fff;
+      border: none;
+      padding: 0.5em 1.5em;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1em;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: var(--primary-red);
+    }
+
+    /* Styling for adjustment buttons */
+    .btn-adjust {
+      border: none;
+      padding: 0.2em 0.5em;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 0 0.2em;
+      transition: background 0.2s;
+      width: 40px; /* Adjusted for button size */
+    }
+
+    /* Ascending yellow to blue gradient for the plus button */
+    .btn-adjust[data-action="increment"] {
+      background: linear-gradient(to top, #f7c600, #1976d2);
+      color: #fff;
+    }
+
+    /* Descending yellow to blue gradient for the minus button */
+    .btn-adjust[data-action="decrement"] {
+      background: linear-gradient(to bottom, #f7c600, #1976d2);
+      color: #fff;
+    }
+
+    .btn-adjust:hover {
+      filter: brightness(1.2);
+    }
+
+    input, select {
+      padding: 0.5em;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #222;
+      color: #fff;
+      width: 50px; /* Adjusted for bid/trick inputs */
+      text-align: center; /* Keeps numbers visually centered */
+    }
+
+    .card {
+      background: #222;
+      border: 2px solid var(--primary-blue);
+      border-radius: 8px;
+      padding: 1em;
+      margin: 1em 0;
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.2);
+    }
+
+    .winner {
+      color: var(--primary-blue);
+      font-size: 2em;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 2em;
+    }
+
+    .shutdown-btn {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      z-index: 1000;
+      background: var(--primary-red);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 1.5em;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(211, 47, 47, 0.2);
+      transition: background 0.2s;
+    }
+
+    .shutdown-btn:hover {
+      background: var(--primary-blue);
+    }
+
+    /* Inline layout for player names, inputs, and buttons */
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 1em; /* Controls spacing between elements */
+      margin-bottom: 1em;
+    }
+
+    label {
+      width: 120px; /* Adjusted for player names */
+      text-align: left; /* Ensures text is right-aligned */
+    }
+
+    /* Adjust spacing between minus and plus buttons */
+    .spaced {
+      margin-left: 2em;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // Wizard Card Game SPA Logic
+    const app = document.getElementById('app');
+    let state = {
+      step: 1,
+      numPlayers: 0,
+      players: [],
+      round: 1,
+      bids: [],
+      tricks: [],
+      scores: [],
+      maxRounds: 0,
+    };
+
+    function render() {
+      switch (state.step) {
+        case 1:
+          renderPlayerCount();
+          break;
+        case 2:
+          renderPlayerNames();
+          break;
+        case 3:
+          renderRound();
+          break;
+        case 5:
+          renderWinner();
+          break;
+      }
+    }
+
+    function renderPlayerCount() {
+      app.innerHTML = `
+        <div class="card">
+          <h2>How many players?</h2>
+          <div class="player-buttons">
+            ${[3, 4, 5, 6].map(num => `
+              <button class="btn-primary player-btn" data-players="${num}">${num} Players</button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      document.querySelectorAll('.player-btn').forEach(button => {
+        button.onclick = (e) => {
+          const val = parseInt(e.target.getAttribute('data-players'), 10);
+          state.numPlayers = val;
+          state.players = Array(val).fill('').map((_, i) => ({ name: '', order: i }));
+          state.scores = Array(val).fill(0);
+          state.maxRounds = Math.floor(60 / val); // Wizard rules: 60 cards / players
+          state.step = 2;
+          render();
+        };
+      });
+    }
+
+    function renderPlayerNames() {
+      app.innerHTML = `
+        <div class="card">
+          <h2>Enter player names (Dealer is Player 1)</h2>
+          <form id="namesForm">
+            ${state.players.map((p, i) => `
+              <div>
+                <label>Player ${i + 1}:</label>
+                <input type="text" name="player${i}" required />
+              </div>
+            `).join('')}
+            <button class="btn-primary" type="submit">Start Game</button>
+          </form>
+          <button class="btn-secondary" id="backToPlayerCount">Back</button>
+        </div>
+      `;
+
+      document.getElementById('namesForm').onsubmit = (e) => {
+        e.preventDefault();
+        const form = e.target;
+        state.players = state.players.map((p, i) => ({
+          ...p,
+          name: form[`player${i}`].value || `Player ${i + 1}`
+        }));
+        state.round = 1;
+        state.step = 3;
+        render();
+      };
+
+      document.getElementById('backToPlayerCount').onclick = () => {
+        state.step = 1;
+        render();
+      };
+    }
+
+    function renderRound() {
+      app.innerHTML = `
+        <div class="card">
+          <h2>Round ${state.round}/${state.maxRounds}: Enter Bids and Tricks</h2>
+          <form id="roundForm">
+            ${state.players.map((p, i) => `
+              <div class="input-group" id="input-group-${i}">
+                <label for="bid${i}">${p.name}:</label>
+                <button type="button" class="btn-adjust" id="bid-decrement-${i}" data-target="bid${i}" data-action="decrement">-</button>
+                <input type="number" id="bid${i}" name="bid${i}" placeholder="Bid" min="0" max="${state.round}" required />
+                <button type="button" class="btn-adjust" id="bid-increment-${i}" data-target="bid${i}" data-action="increment">+</button>
+                <button type="button" class="btn-adjust spaced" id="trick-decrement-${i}" data-target="trick${i}" data-action="decrement">-</button>
+                <input type="number" id="trick${i}" name="trick${i}" placeholder="Tricks" min="0" max="${state.round}" required />
+                <button type="button" class="btn-adjust" id="trick-increment-${i}" data-target="trick${i}" data-action="increment">+</button>
+              </div>
+            `).join('')}
+            <button class="btn-primary" type="submit">Submit Round</button>
+          </form>
+        </div>
+      `;
+
+      document.querySelectorAll('.btn-adjust').forEach(button => {
+        button.onclick = (e) => {
+          const targetName = e.target.getAttribute('data-target');
+          const action = e.target.getAttribute('data-action');
+          const input = document.querySelector(`input[name="${targetName}"]`);
+          if (input) {
+            const currentValue = parseInt(input.value, 10) || 0;
+            const step = action === 'increment' ? 1 : -1;
+            const newValue = Math.min(Math.max(currentValue + step, parseInt(input.min, 10)), parseInt(input.max, 10));
+            input.value = newValue;
+          }
+        };
+      });
+
+      document.getElementById('roundForm').onsubmit = (e) => {
+        e.preventDefault();
+        const form = e.target;
+        state.bids = state.players.map((_, i) => parseInt(form[`bid${i}`].value, 10));
+        state.tricks = state.players.map((_, i) => parseInt(form[`trick${i}`].value, 10));
+
+        const totalTricks = state.tricks.reduce((sum, tricks) => sum + tricks, 0);
+        const trickInputs = Array.from(form.querySelectorAll('input[name^="trick"]'));
+
+        if (totalTricks !== state.round) {
+          trickInputs.forEach(input => {
+            input.style.backgroundColor = 'yellow';
+            input.style.color = 'black';
+          });
+          return;
+        } else {
+          trickInputs.forEach(input => input.style.backgroundColor = '');
+        }
+
+        // Scoring: 20 points for correct bid, +10 per trick
+        state.scores = state.scores.map((score, i) => {
+          if (state.bids[i] === state.tricks[i]) {
+            return score + 20 + state.tricks[i] * 10;
+          } else {
+            return score - Math.abs(state.bids[i] - state.tricks[i]) * 10;
+          }
+        });
+
+        if (state.round < state.maxRounds) {
+          state.round++;
+        } else {
+          state.step = 5;
+        }
+        render();
+      };
+
+      renderScoreboard();
+    }
+
+    function renderScoreboard() {
+      const scoreboard = document.createElement('div');
+      scoreboard.className = 'card';
+      scoreboard.innerHTML = `
+        <h3>Scoreboard</h3>
+        <ul>
+          ${state.players.map((p, i) => `<li>${p.name}: ${state.scores[i]}</li>`).join('')}
+        </ul>
+      `;
+      app.appendChild(scoreboard);
+    }
+
+    function renderWinner() {
+      const maxScore = Math.max(...state.scores);
+      const winners = state.players.filter((_, i) => state.scores[i] === maxScore);
+      const winnerNames = winners.map(w => w.name).join(' & ');
+
+      app.innerHTML = `
+        <div class="winner">
+          🎉 Congratulations ${winnerNames}! 🎉<br>
+          You win with ${maxScore} points!
+        </div>
+        <div class="card">
+          <h3>Final Scores</h3>
+          <ul>
+            ${state.players.map((p, i) => `<li>${p.name}: ${state.scores[i]}</li>`).join('')}
+          </ul>
+          <button class="btn-primary" onclick="location.reload()">Play Again</button>
+        </div>
+      `;
+    }
+
+    render();
+
+  </script>
+</body>
+</html> 
