@@ -32,6 +32,7 @@
       cursor: pointer;
       background: linear-gradient(90deg, var(--primary-red), var(--primary-blue));
       transition: background 0.2s;
+      margin: 0.75em 0;
     }
 
     .btn-primary:hover {
@@ -47,7 +48,6 @@
       border-radius: 4px;
       font-size: 1rem;
       cursor: pointer;
-      margin-top: 1em;
       transition: background 0.2s;
     }
 
@@ -110,27 +110,6 @@
       margin-top: 2em;
     }
 
-    .shutdown-btn {
-      position: fixed;
-      top: 20px;
-      right: 24px;
-      z-index: 1000;
-      background: var(--primary-red);
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
-      font-size: 1.5em;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(211, 47, 47, 0.2);
-      transition: background 0.2s;
-    }
-
-    .shutdown-btn:hover {
-      background: var(--primary-blue);
-    }
-
     /* Inline layout for player names, inputs, and buttons */
     .input-group {
       display: flex;
@@ -140,7 +119,7 @@
     }
 
     label {
-      width: 120px; /* Adjusted for player names */
+      width: var(--dynamic-label-width, 120px);
       text-align: left; /* Ensures text is right-aligned */
     }
 
@@ -149,6 +128,11 @@
       margin-left: 2em;
     }
 
+    /* Dynamically set label width based on longest label text in the parent form */
+    form {
+      /* Custom property to store the calculated width, fallback to 120px */
+      --dynamic-label-width: 120px;
+    }
   </style>
 </head>
 <body>
@@ -165,6 +149,19 @@
       tricks: [],
       scores: [],
       maxRounds: 0,
+    };
+
+    const updateLabelWidths = () => {
+      document.querySelectorAll('form').forEach(form => {
+        let maxLen = 0;
+        form.querySelectorAll('label').forEach(label => {
+          const len = label.textContent.trim().length;
+          if (len > maxLen) maxLen = len;
+        });
+        if (maxLen > 0) {
+          form.style.setProperty('--dynamic-label-width', (maxLen / 3) + 'em');
+        }
+      });
     };
 
     function adjustInputValue(inputName, action) {
@@ -192,6 +189,8 @@
           renderWinner();
           break;
       }
+      // Call updateLabelWidths after each render
+      updateLabelWidths();
     }
 
     function renderPlayerCount() {
