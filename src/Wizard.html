@@ -151,6 +151,19 @@
       maxRounds: 0,
     };
 
+    const updateLabelWidths = () => {
+      document.querySelectorAll('form').forEach(form => {
+        let maxLen = 0;
+        form.querySelectorAll('label').forEach(label => {
+          const len = label.textContent.trim().length;
+          if (len > maxLen) maxLen = len;
+        });
+        if (maxLen > 0) {
+          form.style.setProperty('--dynamic-label-width', (maxLen / 3) + 'em');
+        }
+      });
+    };
+
     function adjustInputValue(inputName, action) {
       const input = document.querySelector(`input[name="${inputName}"]`);
       if (input) {
@@ -176,8 +189,8 @@
           renderWinner();
           break;
       }
-      // Ensure label widths are recalculated after each render
-      if (window.updateLabelWidths) window.updateLabelWidths();
+      // Call updateLabelWidths after each render
+      updateLabelWidths();
     }
 
     function renderPlayerCount() {
@@ -343,25 +356,6 @@
         playAgainBtn.onclick = () => location.reload();
       }
     }
-
-    (function setDynamicLabelWidth() {
-      document.addEventListener('DOMContentLoaded', updateLabelWidths);
-      function updateLabelWidths() {
-        document.querySelectorAll('form').forEach(form => {
-          let maxLen = 0;
-          form.querySelectorAll('label').forEach(label => {
-            const len = label.textContent.trim().length;
-            if (len > maxLen) maxLen = len;
-          });
-          if (maxLen > 0) {
-            // Divide by 2 as requested, use em units
-            form.style.setProperty('--dynamic-label-width', (maxLen / 2) + 'em');
-          }
-        });
-      }
-      // Also update on render (for SPA navigation)
-      window.updateLabelWidths = updateLabelWidths;
-    })();
 
     render();
   </script>
