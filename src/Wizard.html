@@ -119,7 +119,7 @@
     }
 
     label {
-      width: 120px; /* Adjusted for player names */
+      width: var(--dynamic-label-width, 120px);
       text-align: left; /* Ensures text is right-aligned */
     }
 
@@ -128,6 +128,11 @@
       margin-left: 2em;
     }
 
+    /* Dynamically set label width based on longest label text in the parent form */
+    form {
+      /* Custom property to store the calculated width, fallback to 120px */
+      --dynamic-label-width: 120px;
+    }
   </style>
 </head>
 <body>
@@ -171,6 +176,8 @@
           renderWinner();
           break;
       }
+      // Ensure label widths are recalculated after each render
+      if (window.updateLabelWidths) window.updateLabelWidths();
     }
 
     function renderPlayerCount() {
@@ -336,6 +343,25 @@
         playAgainBtn.onclick = () => location.reload();
       }
     }
+
+    (function setDynamicLabelWidth() {
+      document.addEventListener('DOMContentLoaded', updateLabelWidths);
+      function updateLabelWidths() {
+        document.querySelectorAll('form').forEach(form => {
+          let maxLen = 0;
+          form.querySelectorAll('label').forEach(label => {
+            const len = label.textContent.trim().length;
+            if (len > maxLen) maxLen = len;
+          });
+          if (maxLen > 0) {
+            // Divide by 2 as requested, use em units
+            form.style.setProperty('--dynamic-label-width', (maxLen / 2) + 'em');
+          }
+        });
+      }
+      // Also update on render (for SPA navigation)
+      window.updateLabelWidths = updateLabelWidths;
+    })();
 
     render();
   </script>
