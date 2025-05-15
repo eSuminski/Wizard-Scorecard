@@ -167,6 +167,16 @@
       maxRounds: 0,
     };
 
+    function adjustInputValue(inputName, action) {
+      const input = document.querySelector(`input[name="${inputName}"]`);
+      if (input) {
+        const currentValue = parseInt(input.value, 10) || 0;
+        const step = action === 'increment' ? 1 : -1;
+        const newValue = Math.min(Math.max(currentValue + step, parseInt(input.min, 10)), parseInt(input.max, 10));
+        input.value = newValue;
+      }
+    }
+
     function render() {
       switch (state.step) {
         case 1:
@@ -269,13 +279,7 @@
         button.onclick = (e) => {
           const targetName = e.target.getAttribute('data-target');
           const action = e.target.getAttribute('data-action');
-          const input = document.querySelector(`input[name="${targetName}"]`);
-          if (input) {
-            const currentValue = parseInt(input.value, 10) || 0;
-            const step = action === 'increment' ? 1 : -1;
-            const newValue = Math.min(Math.max(currentValue + step, parseInt(input.min, 10)), parseInt(input.max, 10));
-            input.value = newValue;
-          }
+          adjustInputValue(targetName, action);
         };
       });
 
@@ -345,13 +349,16 @@
           <ul>
             ${state.players.map((p, i) => `<li>${p.name}: ${state.scores[i]}</li>`).join('')}
           </ul>
-          <button class="btn-primary" onclick="location.reload()">Play Again</button>
+          <button class="btn-primary" id="playAgainBtn">Play Again</button>
         </div>
       `;
+      const playAgainBtn = document.getElementById('playAgainBtn');
+      if (playAgainBtn) {
+        playAgainBtn.onclick = () => location.reload();
+      }
     }
 
     render();
-
   </script>
 </body>
-</html> 
+</html>
